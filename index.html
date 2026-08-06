@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>叮盘</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #F2EEE3;
+      font-family: 'Noto Sans SC', sans-serif;
+      color: #33302A;
+      min-height: 100vh;
+      padding: 26px 18px 60px;
+    }
+    .wrap { max-width: 430px; margin: 0 auto; }
+    h1 { font-family: 'Noto Serif SC', serif; font-weight: 900; font-size: 26px; text-align: center; margin-bottom: 18px; }
+
+    /* tabs */
+    .tabs { display: flex; background: #33302A1A; border-radius: 999px; padding: 4px; margin-bottom: 20px; }
+    .tab-btn { flex: 1; border: none; border-radius: 999px; padding: 10px 0; font-size: 15px; font-family: inherit; cursor: pointer; background: transparent; color: #33302A; transition: all .15s; }
+    .tab-btn.active { background: #fff; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+
+    /* camera btn */
+    .camera-btn {
+      width: 100%; border: none; border-radius: 16px;
+      background: #4E7A5A; color: #fff;
+      padding: 46px 20px; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+      box-shadow: 0 8px 22px rgba(78,122,90,.3);
+      transition: transform .12s;
+    }
+    .camera-btn:active { transform: scale(.97); }
+    .camera-btn .title { font-weight: 700; font-size: 20px; }
+    .camera-btn .sub { font-size: 13px; opacity: .85; }
+
+    /* preview img */
+    .preview { width: 100%; border-radius: 14px; max-height: 250px; object-fit: cover; display: block; margin-bottom: 14px; }
+
+    /* spinner */
+    .spinner-wrap { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 22px 0; font-size: 15px; color: #9B9280; }
+    .spinner { width: 20px; height: 20px; border: 2.4px solid #4E7A5A; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* error */
+    .error-msg { text-align: center; padding: 14px 0; }
+    .error-msg p { font-size: 14px; color: #B5442F; margin-bottom: 12px; }
+
+    /* result banner */
+    .result-banner { border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; margin-bottom: 8px; color: #fff; }
+    .banner-icon { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.22); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; flex-shrink: 0; }
+    .banner-label { font-size: 19px; font-weight: 700; }
+    .banner-dish { font-size: 13px; opacity: .9; margin-top: 2px; }
+
+    /* correct link */
+    .correct-link { background: transparent; border: none; color: #9B9280; font-size: 13px; cursor: pointer; padding: 4px 2px; margin-bottom: 10px; text-decoration: underline; text-underline-offset: 3px; font-family: inherit; display: block; }
+    .correct-box { background: #fff; border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; }
+    .correct-box label { font-size: 13px; color: #9B9280; display: block; margin-bottom: 8px; }
+    .correct-row { display: flex; gap: 8px; }
+    .correct-input { flex: 1; border: 1.5px solid #9B928066; border-radius: 10px; padding: 10px 12px; font-size: 15px; font-family: inherit; background: #F2EEE3; outline: none; }
+    .correct-input:focus { border-color: #4E7A5A; }
+    .correct-submit { background: #4E7A5A; color: #fff; border: none; border-radius: 10px; padding: 10px 18px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .correct-submit:disabled { background: #9B9280; cursor: default; }
+
+    /* card */
+    .card { background: #fff; border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; }
+    .card-label { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+    .card-row { font-size: 15px; line-height: 1.7; display: flex; gap: 8px; }
+
+    /* tip */
+    .tip { border-left: 3px solid #4E7A5A; padding: 4px 14px; font-size: 14.5px; line-height: 1.7; color: #33302A; margin-bottom: 12px; font-style: italic; }
+
+    /* calories */
+    .calories-bar { background: #9B928014; border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+    .calories-bar .cal-label { font-size: 13px; color: #9B9280; }
+    .calories-bar .cal-value { font-size: 15px; font-weight: 700; color: #33302A; font-family: monospace; }
+
+    /* action btns */
+    .action-row { display: flex; gap: 10px; margin-bottom: 4px; }
+    .btn { border: none; border-radius: 999px; padding: 15px 20px; font-size: 15px; font-family: inherit; cursor: pointer; transition: transform .12s; }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: #4E7A5A; color: #fff; font-size: 16px; font-weight: 700; flex: 1; }
+    .btn-primary.saved { background: #9B9280; cursor: default; }
+    .btn-secondary { background: transparent; color: #33302A; border: 1.5px solid #9B928088; }
+    .btn-ghost { background: transparent; border: 1.5px solid #9B9280; color: #33302A; }
+    .btn-dark { background: #33302A; color: #fff; font-weight: 700; }
+
+    /* disclaimer */
+    .disclaimer { text-align: center; font-size: 11.5px; color: #9B9280; margin-top: 14px; line-height: 1.6; }
+
+    /* history */
+    .day-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; padding: 0 2px; }
+    .day-title { font-family: 'Noto Serif SC', serif; font-weight: 900; font-size: 16px; }
+    .day-stats { font-size: 12px; color: #9B9280; }
+    .record-item { background: #fff; border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .record-thumb { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: #F2EEE3; }
+    .record-info { flex: 1; min-width: 0; }
+    .record-dish { font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .record-time { font-size: 12px; color: #9B9280; margin-top: 2px; }
+    .record-tag { font-size: 12px; font-weight: 700; color: #fff; border-radius: 999px; padding: 4px 10px; flex-shrink: 0; }
+    .record-del { background: transparent; border: none; color: #9B9280; font-size: 18px; cursor: pointer; padding: 4px 6px; flex-shrink: 0; line-height: 1; }
+
+    /* summary box */
+    .summary-box { background: #fff; border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; }
+    .summary-header { display: flex; align-items: center; justify-content: space-between; }
+    .summary-title { font-size: 15px; font-weight: 700; }
+    .summary-text { font-size: 14.5px; line-height: 1.8; margin-top: 10px; }
+    .btn-sm { background: #33302A; color: #fff; border: none; border-radius: 999px; padding: 7px 16px; font-size: 13px; cursor: pointer; font-family: inherit; }
+    .btn-sm:disabled { opacity: .7; cursor: default; }
+
+    .empty { text-align: center; color: #9B9280; font-size: 14px; padding: 28px 0; line-height: 1.8; }
+
+    /* fade in */
+    .fade-in { animation: fadeIn .45s ease both; }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: translateY(0); } }
+
+    /* API key prompt */
+    .api-prompt { background: #fff; border-radius: 14px; padding: 20px; margin-bottom: 20px; text-align: center; }
+    .api-prompt p { font-size: 14px; color: #9B9280; margin-bottom: 12px; line-height: 1.6; }
+    .api-input { width: 100%; border: 1.5px solid #9B928066; border-radius: 10px; padding: 10px 12px; font-size: 14px; font-family: inherit; background: #F2EEE3; outline: none; margin-bottom: 10px; }
+    .api-input:focus { border-color: #4E7A5A; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>叮盘</h1>
+  <div id="app"></div>
+</div>
+
+<script>
+// ── 颜色常量 ──
+const C = { good: '#4E7A5A', mid: '#C08A2D', warn: '#B5442F', muted: '#9B9280' };
+const LEVELS = {
+  good: { label: '清淡，适合你', short: '清淡', color: C.good, icon: '✓' },
+  mid:  { label: '还行，注意一点', short: '还行', color: C.mid, icon: '•' },
+  warn: { label: '偏油腻，建议少吃', short: '偏油', color: C.warn, icon: '!' },
+};
+const STORAGE_KEY = 'dingpan-records-v1';
+const APIKEY_KEY  = 'dingpan-apikey';
+
+const BASE_RULES =
+  '你是一位温和的饮食助手。使用者是一位血脂偏高、医生建议清淡饮食（少油、少盐、少胆固醇）的中年人。' +
+  '评估重点：油脂多不多（油炸、肥肉、重油炒菜、五花肉等隐性高脂）、盐分咸不咸（腌制、酱料重）、有没有高胆固醇食材（动物内脏、蛋黄过多等）、蔬菜粗粮占比。' +
+  '评估标准：good=整体清淡少油少盐适合他；mid=大体可以但有一两处要注意；warn=明显油腻/重盐/高胆固醇，这餐不太适合。' +
+  '语气始终温和鼓励，即使是warn也不要批评，重点放在\'下次可以怎么调整\'。highlights和cautions各1-3条，要具体。';
+
+// ── 工具函数 ──
+function todayKey(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function formatDateLabel(key) {
+  const [y,m,d] = key.split('-').map(Number);
+  const date = new Date(y, m-1, d);
+  const now = new Date();
+  const yest = new Date(now); yest.setDate(now.getDate()-1);
+  if (key === todayKey(now)) return '今天';
+  if (key === todayKey(yest)) return '昨天';
+  const days = ['日','一','二','三','四','五','六'];
+  return `${m}月${d}日 周${days[date.getDay()]}`;
+}
+function loadRecords() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+}
+function saveRecords(arr) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch {}
+}
+function loadApiKey() { return localStorage.getItem(APIKEY_KEY) || ''; }
+function saveApiKey(k) { localStorage.setItem(APIKEY_KEY, k); }
+
+function makeThumb(dataUrl, maxW=140) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, maxW / img.width);
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width*s); c.height = Math.round(img.height*s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      resolve(c.toDataURL('image/jpeg', 0.55));
+    };
+    img.onerror = () => resolve(null);
+    img.src = dataUrl;
+  });
+}
+
+// ── 状态 ──
+let state = {
+  tab: 'check',
+  apiKey: loadApiKey(),
+  imageDataUrl: null,
+  imageBase64: null,
+  mediaType: 'image/jpeg',
+  analyzing: false,
+  result: null,
+  error: null,
+  correcting: false,
+  correctedName: '',
+  saved: false,
+  records: loadRecords(),
+  weeklySummary: null,
+  summarizing: false,
+};
+
+function setState(patch) {
+  Object.assign(state, patch);
+  render();
+}
+
+// ── API 调用 ──
+async function runAnalysis(b64, mt, userDishName) {
+  setState({ analyzing: true, error: null, result: null });
+  const identifyInstruction = userDishName
+    ? `使用者已经告诉你，这道菜其实是「${userDishName}」。请以此为准，结合照片里看到的做法和食材细节，重新做健康评估。dish_name直接填「${userDishName}」，candidates填空数组[]，uncertain填false。`
+    : '先识别菜品。如果你对菜名有把握，dish_name填菜名，candidates填空数组[]，uncertain填false。' +
+      '如果这道菜有多种可能（比如裹粉炸物和粉蒸类外观相似），不要硬猜一个：uncertain填true，candidates填2-3个候选，dish_name填最可能的那个，评估按最不利血脂的可能性给出，在tip里提一句。';
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': state.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6', max_tokens: 800,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: mt, data: b64 } },
+          { type: 'text', text: BASE_RULES + identifyInstruction +
+            '只返回一个JSON对象，不要任何其他文字或markdown标记。格式：' +
+            '{"dish_name":"菜名","uncertain":false,"candidates":[],"level":"good或mid或warn","highlights":["做得好的"],"cautions":["要注意的"],"tip":"一句建议","calories_min":数字,"calories_max":数字}' +
+            'calories是中等份量估算热量区间（整数kcal），无法估算填0。若照片无食物，dish_name填\'没有看到食物\'，level填mid。'
+          }
+        ]}]
+      })
+    });
+    const data = await resp.json();
+    const text = (data.content||[]).find(b=>b.type==='text');
+    if (!text) throw new Error('no text');
+    const cleaned = text.text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/```\s*$/i,'');
+    setState({ result: JSON.parse(cleaned), analyzing: false });
+  } catch(e) {
+    setState({ error: '这次没看清楚，请换个角度再拍一张试试。', analyzing: false });
+  }
+}
+
+async function generateWeeklySummary() {
+  setState({ summarizing: true, weeklySummary: null });
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-7);
+  const recent = state.records.filter(r => new Date(r.date) >= cutoff);
+  if (!recent.length) {
+    setState({ weeklySummary: '最近7天还没有记录，先拍几餐再来看小结吧。', summarizing: false });
+    return;
+  }
+  const lines = recent.map(r=>`${r.date} ${r.time} ${r.dish}（${LEVELS[r.level]?LEVELS[r.level].short:r.level}）`).join('\n');
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': state.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6', max_tokens: 400,
+        messages: [{ role: 'user', content:
+          '你是一位温和的饮食助手。下面是一位血脂偏高、需要清淡饮食的中年人最近7天的餐食记录（清淡=适合，还行=基本可以，偏油=不太适合）：\n' + lines +
+          '\n请用3-4句话写一段温和的一周小结：先肯定做得好的趋势，再温和指出一个最值得注意的模式，最后给一个下周可以尝试的具体小建议。语气像关心他的家人，不说教、不罗列数字。直接输出小结文字，不要任何格式标记。'
+        }]
+      })
+    });
+    const data = await resp.json();
+    const text = (data.content||[]).find(b=>b.type==='text');
+    setState({ weeklySummary: text ? text.text.trim() : '小结生成失败，稍后再试。', summarizing: false });
+  } catch {
+    setState({ weeklySummary: '小结生成失败，稍后再试。', summarizing: false });
+  }
+}
+
+// ── 渲染 ──
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  // API key 设置
+  if (!state.apiKey) {
+    app.innerHTML = `
+      <div class="api-prompt">
+        <p>首次使用需要填入 Anthropic API Key<br>（格式：sk-ant-…）</p>
+        <input class="api-input" id="apiKeyInput" type="password" placeholder="sk-ant-..." value="" />
+        <button class="btn btn-dark" style="width:100%" onclick="
+          const k = document.getElementById('apiKeyInput').value.trim();
+          if(k){ saveApiKey(k); setState({apiKey:k}); }
+        ">保存并开始使用</button>
+        <p style="margin-top:12px;font-size:11px">Key 仅存在你的设备上，不会上传到任何服务器</p>
+      </div>`;
+    return;
+  }
+
+  // Tabs
+  const tabs = document.createElement('div');
+  tabs.className = 'tabs';
+  ['拍一餐','记录'].forEach((label, i) => {
+    const key = i===0?'check':'history';
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (state.tab===key?' active':'');
+    btn.textContent = label;
+    btn.onclick = () => setState({ tab: key });
+    tabs.appendChild(btn);
+  });
+  app.appendChild(tabs);
+
+  if (state.tab === 'check') renderCheck(app);
+  else renderHistory(app);
+}
+
+function renderCheck(app) {
+  const wrap = document.createElement('div');
+
+  // 没有图片时显示拍照按钮
+  if (!state.imageDataUrl) {
+    wrap.innerHTML = `
+      <button class="camera-btn" onclick="document.getElementById('fileInput').click()">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7">
+          <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z"/>
+          <circle cx="12" cy="13" r="3.4"/>
+        </svg>
+        <div class="title">拍下这一餐</div>
+        <div class="sub">拍完自动帮你看 · 尽量俯拍带上整盘菜</div>
+      </button>
+      <input id="fileInput" type="file" accept="image/*" capture="environment" style="display:none" />`;
+    app.appendChild(wrap);
+    document.getElementById('fileInput').onchange = handleFile;
+    return;
+  }
+
+  // 预览图
+  const img = document.createElement('img');
+  img.className = 'preview fade-in';
+  img.src = state.imageDataUrl;
+  wrap.appendChild(img);
+
+  // 分析中
+  if (state.analyzing) {
+    wrap.innerHTML += `<div class="spinner-wrap fade-in"><div class="spinner"></div>正在帮你看这一餐…</div>`;
+    app.appendChild(wrap);
+    return;
+  }
+
+  // 错误
+  if (state.error) {
+    const errDiv = document.createElement('div');
+    errDiv.className = 'error-msg fade-in';
+    errDiv.innerHTML = `<p>${state.error}</p>`;
+    const rebtn = document.createElement('button');
+    rebtn.className = 'btn btn-ghost';
+    rebtn.textContent = '重新拍';
+    rebtn.onclick = resetCheck;
+    errDiv.appendChild(rebtn);
+    wrap.appendChild(errDiv);
+    app.appendChild(wrap);
+    return;
+  }
+
+  // 结果
+  if (state.result) {
+    const r = state.result;
+    const lv = LEVELS[r.level] || LEVELS.mid;
+
+    const resultDiv = document.createElement('div');
+    resultDiv.className = 'fade-in';
+
+    // banner
+    const dishDisplay = r.uncertain && r.candidates && r.candidates.length > 1
+      ? `可能是：${r.candidates.join(' / ')}` : r.dish_name;
+    resultDiv.innerHTML += `
+      <div class="result-banner" style="background:${lv.color}">
+        <div class="banner-icon">${lv.icon}</div>
+        <div><div class="banner-label">${lv.label}</div><div class="banner-dish">${dishDisplay}</div></div>
+      </div>`;
+
+    // 修正入口
+    if (!state.correcting) {
+      resultDiv.innerHTML += `<button class="correct-link" onclick="setState({correcting:true})">菜认错了？点这里改</button>`;
+    } else {
+      resultDiv.innerHTML += `
+        <div class="correct-box">
+          <label>这道菜其实是：</label>
+          <div class="correct-row">
+            <input class="correct-input" id="corrName" placeholder="告诉我这道菜叫什么" value="${state.correctedName}" />
+            <button class="correct-submit" id="corrBtn" onclick="submitCorrection()">重新看</button>
+          </div>
+        </div>`;
+    }
+
+    // 做得好的
+    if (r.highlights && r.highlights.length) {
+      resultDiv.innerHTML += `<div class="card"><div class="card-label" style="color:${C.good}">这餐做得好的</div>` +
+        r.highlights.map(h=>`<div class="card-row"><span style="color:${C.good}">·</span><span>${h}</span></div>`).join('') + '</div>';
+    }
+    // 要留意的
+    if (r.cautions && r.cautions.length) {
+      resultDiv.innerHTML += `<div class="card"><div class="card-label" style="color:${C.mid}">要留意的</div>` +
+        r.cautions.map(c=>`<div class="card-row"><span style="color:${C.mid}">·</span><span>${c}</span></div>`).join('') + '</div>';
+    }
+    // tip
+    if (r.tip) {
+      resultDiv.innerHTML += `<div class="tip">${r.tip}</div>`;
+    }
+    // 卡路里（底部补充信息）
+    if (r.calories_min > 0 && r.calories_max > 0) {
+      resultDiv.innerHTML += `
+        <div class="calories-bar">
+          <span class="cal-label">估算热量（中等份量）</span>
+          <span class="cal-value">约 ${r.calories_min}–${r.calories_max} kcal</span>
+        </div>`;
+    }
+
+    // 按钮
+    const actionRow = document.createElement('div');
+    actionRow.className = 'action-row';
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn btn-primary' + (state.saved?' saved':'');
+    saveBtn.textContent = state.saved ? '已记下 ✓' : '记下这一餐';
+    if (!state.saved) saveBtn.onclick = saveRecord;
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn btn-secondary';
+    nextBtn.textContent = '拍下一餐';
+    nextBtn.onclick = resetCheck;
+    actionRow.appendChild(saveBtn);
+    actionRow.appendChild(nextBtn);
+    resultDiv.appendChild(actionRow);
+
+    resultDiv.innerHTML += `<p class="disclaimer">AI 的判断仅供参考，不能代替医生的饮食建议。具体饮食方案请遵医嘱。</p>`;
+    wrap.appendChild(resultDiv);
+  }
+
+  // 隐藏的 file input
+  wrap.innerHTML += `<input id="fileInput" type="file" accept="image/*" capture="environment" style="display:none" />`;
+  app.appendChild(wrap);
+
+  if (state.correcting) {
+    const inp = document.getElementById('corrName');
+    if (inp) inp.oninput = e => { state.correctedName = e.target.value; };
+  }
+  const fi = document.getElementById('fileInput');
+  if (fi) fi.onchange = handleFile;
+}
+
+function renderHistory(app) {
+  const wrap = document.createElement('div');
+  wrap.className = 'fade-in';
+
+  // 一周小结
+  const summBox = document.createElement('div');
+  summBox.className = 'summary-box';
+  summBox.innerHTML = `
+    <div class="summary-header">
+      <span class="summary-title">一周小结</span>
+      <button class="btn-sm" id="summBtn" onclick="generateWeeklySummary()" ${state.summarizing?'disabled':''}>
+        ${state.summarizing ? '正在写…' : state.weeklySummary ? '重新生成' : '生成小结'}
+      </button>
+    </div>
+    ${state.weeklySummary ? `<div class="summary-text">${state.weeklySummary}</div>` : ''}`;
+  wrap.appendChild(summBox);
+
+  // 时间线
+  if (!state.records.length) {
+    wrap.innerHTML += `<div class="empty">还没有记录。<br>去"拍一餐"，评估后点"记下这一餐"就会出现在这里。</div>`;
+    app.appendChild(wrap);
+    return;
+  }
+
+  const grouped = {};
+  state.records.forEach(r => { if (!grouped[r.date]) grouped[r.date]=[]; grouped[r.date].push(r); });
+  const dateKeys = Object.keys(grouped).sort((a,b)=>a<b?1:-1);
+
+  dateKeys.forEach(dk => {
+    const list = grouped[dk];
+    const s = {good:0,mid:0,warn:0};
+    list.forEach(r=>{ if(s[r.level]!==undefined) s[r.level]++; });
+    const statsHtml = [
+      s.good?`<span style="color:${C.good}">清淡×${s.good} </span>`:'',
+      s.mid?`<span style="color:${C.mid}">还行×${s.mid} </span>`:'',
+      s.warn?`<span style="color:${C.warn}">偏油×${s.warn}</span>`:'',
+    ].join('');
+
+    const dayDiv = document.createElement('div');
+    dayDiv.style.marginBottom = '20px';
+    dayDiv.innerHTML = `<div class="day-header"><span class="day-title">${formatDateLabel(dk)}</span><span class="day-stats">${statsHtml}</span></div>`;
+
+    list.forEach(r => {
+      const lv = LEVELS[r.level] || LEVELS.mid;
+      const item = document.createElement('div');
+      item.className = 'record-item';
+      if (r.thumb) {
+        const thumbImg = document.createElement('img');
+        thumbImg.className = 'record-thumb';
+        thumbImg.src = r.thumb;
+        thumbImg.alt = r.dish;
+        item.appendChild(thumbImg);
+      } else {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'record-thumb';
+        item.appendChild(placeholder);
+      }
+      item.innerHTML += `
+        <div class="record-info">
+          <div class="record-dish">${r.dish}</div>
+          <div class="record-time">${r.time}</div>
+        </div>
+        <div class="record-tag" style="background:${lv.color}">${lv.short}</div>
+        <button class="record-del" onclick="deleteRecord('${r.id}')">×</button>`;
+      dayDiv.appendChild(item);
+    });
+    wrap.appendChild(dayDiv);
+  });
+
+  // API key 设置入口（小字）
+  const settingsLink = document.createElement('p');
+  settingsLink.style.cssText = 'text-align:center;font-size:12px;color:#9B9280;margin-top:8px;cursor:pointer;text-decoration:underline;text-underline-offset:3px';
+  settingsLink.textContent = '重新设置 API Key';
+  settingsLink.onclick = () => { localStorage.removeItem(APIKEY_KEY); setState({ apiKey: '' }); };
+  wrap.appendChild(settingsLink);
+
+  app.appendChild(wrap);
+}
+
+// ── 事件处理 ──
+function handleFile(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  setState({ error: null, result: null, saved: false, correcting: false, correctedName: '', mediaType: file.type||'image/jpeg' });
+  const reader = new FileReader();
+  reader.onload = () => {
+    const dataUrl = reader.result;
+    state.imageDataUrl = dataUrl;
+    state.imageBase64 = dataUrl.split(',')[1];
+    render();
+    setTimeout(() => runAnalysis(state.imageBase64, state.mediaType, null), 100);
+  };
+  reader.onerror = () => setState({ error: '照片读取失败，请再拍一次。' });
+  reader.readAsDataURL(file);
+}
+
+function submitCorrection() {
+  const inp = document.getElementById('corrName');
+  const name = (inp ? inp.value : state.correctedName).trim();
+  if (!name || !state.imageBase64) return;
+  setState({ correcting: false, correctedName: '', result: null, saved: false });
+  runAnalysis(state.imageBase64, state.mediaType, name);
+}
+
+async function saveRecord() {
+  if (!state.result || state.saved) return;
+  const thumb = state.imageDataUrl ? await makeThumb(state.imageDataUrl) : null;
+  const now = new Date();
+  const rec = {
+    id: `${now.getTime()}`,
+    date: todayKey(now),
+    time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
+    dish: state.result.dish_name,
+    level: state.result.level,
+    thumb,
+  };
+  state.records = [rec, ...state.records];
+  saveRecords(state.records);
+  setState({ saved: true });
+}
+
+function deleteRecord(id) {
+  state.records = state.records.filter(r => r.id !== id);
+  saveRecords(state.records);
+  render();
+}
+
+function resetCheck() {
+  setState({ imageDataUrl: null, imageBase64: null, result: null, error: null, correcting: false, correctedName: '', saved: false });
+}
+
+// ── 初始化 ──
+render();
+</script>
+</body>
+</html>
