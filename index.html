@@ -308,7 +308,7 @@ function renderCheck(app) {
         <div class="title">拍下这一餐</div>
         <div class="sub">拍完自动帮你看 · 尽量俯拍带上整盘菜</div>
       </button>
-      <input id="fileInput" type="file" accept="image/*" capture="environment" style="display:none" />`;
+      <input id="fileInput" type="file" accept="image/*" style="display:none" />`;
     app.appendChild(wrap);
     document.getElementById('fileInput').onchange = handleFile;
     return;
@@ -416,7 +416,7 @@ function renderCheck(app) {
   }
 
   // 隐藏的 file input
-  wrap.innerHTML += `<input id="fileInput" type="file" accept="image/*" capture="environment" style="display:none" />`;
+  wrap.innerHTML += `<input id="fileInput" type="file" accept="image/*" style="display:none" />`;
   app.appendChild(wrap);
 
   if (state.correcting) {
